@@ -186,7 +186,7 @@ const show = (id) => {
 };
 
 // Prefetch the encrypted payload while she reads the lock screen.
-const payloadPromise = fetch('payload.enc')
+const payloadPromise = fetch('payload.enc', { cache: 'no-cache' }) // revalidate so pushed updates show up right away
   .then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.arrayBuffer(); })
   .then((b) => { payloadBytes = new Uint8Array(b); })
   .catch(() => {});
