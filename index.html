@@ -284,6 +284,7 @@ function answer(i, btn) {
   const right = q.correct === null || i === q.correct;
   if (q.video) {
     $('photoslot').innerHTML = `<video src="${q.video}" controls autoplay playsinline loop></video>`;
+    $('polaroid').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   if (right) {
     scoreCount++;
