@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#f6efe3">
 <title>10 Years of Us</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
 <style>
@@ -71,6 +74,7 @@
     width: 110px; height: 30px; background: var(--tape); box-shadow: 0 1px 2px rgba(0,0,0,.12);
   }
   .polaroid img { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: contain; background: #efe9dc; }
+  .polaroid video { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: contain; background: #000; }
   .placeholder {
     width: 100%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; gap: 6px;
     align-items: center; justify-content: center; border: 3px dashed #cbbfa8;
@@ -140,7 +144,7 @@
 
 <section id="lock" class="screen active">
   <div class="lock-card">
-    <div class="lock-heart">💕</div>
+    <div class="lock-heart" id="lockheart">💕</div>
     <h1>10 Years of Us</h1>
     <p class="sub" id="hint"></p>
     <input id="pw" type="password" inputmode="numeric" autocomplete="off" aria-label="password">
@@ -201,6 +205,18 @@ async function decrypt(password, bytes) {
   return JSON.parse(new TextDecoder().decode(pt));
 }
 
+function buzz(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+// Hashes only — nothing readable leaks into this public file.
+const EGG_HASHES = [
+  '9bb840df7f699d6547f49fd6f9ed17b2d9dd34148f0b01e798d7c51da897ea1a',
+  '49043d6718bb792c82457c095200c835db49d6e191f7af49bbc903153de1f9d6'
+];
+async function sha256hex(s) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function tryUnlock() {
   const btn = $('unlockbtn');
   btn.disabled = true;
@@ -211,11 +227,17 @@ async function tryUnlock() {
     btn.disabled = false;
     return;
   }
+  const guess = $('pw').value.trim();
   try {
-    quiz = await decrypt($('pw').value.trim(), payloadBytes);
+    quiz = await decrypt(guess, payloadBytes);
+    buzz(30);
     startQuiz();
   } catch {
-    $('lockmsg').textContent = 'Nope… think anniversary 😉';
+    const namedGuess = EGG_HASHES.includes(await sha256hex(guess.toLowerCase()));
+    $('lockmsg').textContent = namedGuess
+      ? 'Cute guess... but it needs to be a DATE 🗓️😉'
+      : 'Nope… think anniversary 😉';
+    buzz(80);
     $('lock').classList.add('shake');
     setTimeout(() => $('lock').classList.remove('shake'), 500);
     $('pw').value = '';
@@ -260,13 +282,18 @@ function answer(i, btn) {
   const buttons = [...$('answers').children];
   buttons.forEach((b) => (b.disabled = true));
   const right = q.correct === null || i === q.correct;
+  if (q.video) {
+    $('photoslot').innerHTML = `<video src="${q.video}" controls autoplay playsinline loop></video>`;
+  }
   if (right) {
     scoreCount++;
     btn.classList.add('correct');
+    buzz(q.correct === null ? [40, 60, 40, 60, 140] : [30, 40, 60]);
     confetti(q.correct === null ? 160 : 60);
     $('feedback').innerHTML = `<span class="verdict">${pick(['Yes!!', 'Nailed it!', 'Of course you knew 💕', 'Correct!'])}</span>${q.caption}`;
   } else {
     btn.classList.add('wrong');
+    buzz(90);
     buttons[q.correct].classList.add('correct');
     $('feedback').innerHTML = `<span class="verdict">${pick(['Nope! 😜', 'Not quite!', 'Gasp!! 😱'])}</span>${q.caption}`;
   }
@@ -296,6 +323,7 @@ function showScore() {
     pct >= .5 ? 'Solid! The next 10 years are for studying. 📚' :
     "Good thing this quiz wasn't in the vows. 😅 I love you anyway.";
   confetti(120);
+  buzz([40, 60, 40, 60, 120]);
   show('score');
 }
 
@@ -323,6 +351,7 @@ function showFinale() {
   $('finalemsg').textContent = quiz.finale.message;
   $('finalefrom').textContent = quiz.finale.from;
   buildCollage();
+  buzz([50, 80, 50, 80, 200]);
   show('finale');
   let n = 0;
   const t = setInterval(() => { confetti(14, ['❤', '💕', '💗', '💞']); if (++n > 7) clearInterval(t); }, 700);
@@ -376,6 +405,16 @@ function confetti(count, chars) {
 }
 
 $('unlockbtn').onclick = tryUnlock;
+
+// Secret confetti stash: tap the heart 10 times.
+let heartTaps = 0;
+$('lockheart').onclick = () => {
+  if (++heartTaps % 10 === 0) {
+    confetti(220);
+    buzz([30, 40, 30, 40, 90]);
+    $('lockmsg').textContent = 'You found the secret confetti stash 🎉';
+  }
+};
 $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
 $('nextbtn').onclick = next;
 $('finalebtn').onclick = showFinale;
