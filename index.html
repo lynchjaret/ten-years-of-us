@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#f6efe3">
+<title>10 Years of Us</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6efe3; --ink: #3c3226; --accent: #e0526d; --accent-dark: #c23a55;
+    --good: #3f9d63; --bad: #d05050; --tape: rgba(240, 220, 140, .75);
+  }
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Patrick Hand', 'Comic Sans MS', cursive;
+    color: var(--ink);
+    background: var(--paper);
+    background-image: radial-gradient(rgba(60, 50, 38, .06) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+  .screen { display: none; min-height: 100dvh; padding: 24px 20px 40px; flex-direction: column; align-items: center; }
+  .screen.active { display: flex; animation: screenIn .45s ease both; }
+  @keyframes screenIn { from { opacity: 0; transform: translateY(14px); } }
+  h1 { font-family: Caveat, cursive; font-size: 3rem; line-height: 1.05; text-align: center; }
+  .sub { font-size: 1.15rem; opacity: .75; text-align: center; }
+
+  /* ---- lock screen ---- */
+  #lock { justify-content: center; gap: 18px; text-align: center; position: relative; overflow: hidden; }
+  .floatheart { position: absolute; bottom: -50px; pointer-events: none; opacity: .3; animation: floatUp linear infinite; }
+  @keyframes floatUp { to { transform: translateY(-115vh) rotate(25deg); } }
+  .lock-heart { font-size: 4rem; animation: beat 1.6s ease-in-out infinite; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 12% { transform: scale(1.15); } 24% { transform: scale(1); } }
+  #pw {
+    font: inherit; font-size: 1.8rem; letter-spacing: .5em; text-align: center; text-indent: .5em;
+    width: min(70vw, 240px); padding: 10px 6px; color: var(--ink);
+    border: none; border-bottom: 3px dashed var(--ink); background: transparent; outline: none;
+  }
+  #lock.shake .lock-card { animation: shake .45s; }
+  @keyframes shake { 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
+  .lock-card { display: flex; flex-direction: column; gap: 18px; align-items: center; }
+  #lockmsg { min-height: 1.4em; color: var(--accent-dark); font-size: 1.1rem; }
+
+  button.big {
+    font: inherit; font-size: 1.35rem; padding: 12px 34px; border: none; border-radius: 999px;
+    background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-dark);
+    cursor: pointer; touch-action: manipulation;
+  }
+  button.big:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-dark); }
+  button.big:disabled { opacity: .55; }
+
+  /* ---- quiz ---- */
+  #progress { font-size: 1.1rem; opacity: .7; margin-bottom: 10px; }
+  .polaroid {
+    --tilt: -2.2deg;
+    background: #fff; padding: 12px 12px 40px; width: min(88vw, 400px);
+    box-shadow: 0 6px 18px rgba(60, 50, 38, .25); transform: rotate(var(--tilt));
+    position: relative; margin: 14px 0 6px;
+  }
+  .polaroid.alt { --tilt: 1.8deg; }
+  .polaroid.enter { animation: polaroidIn .55s cubic-bezier(.2, 1.3, .4, 1) both; }
+  @keyframes polaroidIn {
+    from { opacity: 0; transform: rotate(calc(var(--tilt) - 7deg)) translateY(-30px) scale(.92); }
+    to { opacity: 1; transform: rotate(var(--tilt)); }
+  }
+  .polaroid::before {
+    content: ''; position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(-3deg);
+    width: 110px; height: 30px; background: var(--tape); box-shadow: 0 1px 2px rgba(0,0,0,.12);
+  }
+  .polaroid img { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: contain; background: #efe9dc; }
+  .placeholder {
+    width: 100%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; gap: 6px;
+    align-items: center; justify-content: center; border: 3px dashed #cbbfa8;
+    color: #a2947b; font-size: 1.1rem; background: #faf6ec;
+  }
+  .placeholder span { font-size: 2.2rem; }
+  .question { font-size: 1.45rem; text-align: center; margin: 14px 6px 16px; max-width: 430px; }
+  .answers { display: flex; flex-direction: column; gap: 12px; width: min(88vw, 400px); }
+  .answers button {
+    font: inherit; font-size: 1.2rem; text-align: left; padding: 13px 16px;
+    border: 2.5px solid var(--ink); border-radius: 14px 10px 16px 10px / 10px 16px 10px 14px;
+    background: #fffdf6; color: var(--ink); cursor: pointer; touch-action: manipulation;
+    transition: transform .08s;
+  }
+  .answers button:active { transform: scale(.98); }
+  .answers button.correct { background: var(--good); border-color: var(--good); color: #fff; animation: popCorrect .45s cubic-bezier(.2, 1.6, .4, 1); }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: shakeBtn .4s; }
+  .answers button:disabled { opacity: .92; }
+  .answers button { animation: answerIn .45s ease backwards; animation-delay: var(--d, 0s); }
+  @keyframes answerIn { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes popCorrect { 40% { transform: scale(1.06); } }
+  @keyframes shakeBtn { 20%,60% { transform: translateX(-7px); } 40%,80% { transform: translateX(7px); } }
+  #feedback { min-height: 2.2em; font-size: 1.25rem; text-align: center; margin-top: 14px; max-width: 420px; }
+  #feedback .verdict { font-family: Caveat, cursive; font-size: 1.9rem; display: block; animation: verdictIn .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+  @keyframes verdictIn { from { opacity: 0; transform: scale(.5); } }
+  #nextbtn { margin-top: 14px; visibility: hidden; }
+
+  /* ---- score + finale ---- */
+  #score, #finale { justify-content: center; gap: 20px; text-align: center; }
+  .scorebig { font-family: Caveat, cursive; font-size: 5rem; color: var(--accent-dark); animation: verdictIn .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .rating { font-size: 1.4rem; max-width: 420px; }
+  .letter {
+    background: #fffdf6; padding: 28px 24px; width: min(88vw, 420px);
+    box-shadow: 0 6px 18px rgba(60, 50, 38, .25); transform: rotate(-1.2deg);
+    font-family: Caveat, cursive; font-size: 1.7rem; line-height: 1.35; text-align: left;
+    animation: letterIn .7s cubic-bezier(.2, 1.3, .4, 1) both .3s;
+  }
+  .letter .sig { display: block; text-align: right; margin-top: 14px; font-size: 1.9rem; color: var(--accent-dark); }
+  .letter .letter-title { display: block; text-align: center; font-size: 2.4rem; color: var(--accent-dark); margin-bottom: 14px; }
+  @keyframes letterIn {
+    from { opacity: 0; transform: rotate(-1.2deg) translateY(40px) scale(.9); }
+    to { opacity: 1; transform: rotate(-1.2deg); }
+  }
+
+  /* ---- finale collage ---- */
+  #finale { position: relative; overflow: hidden; }
+  #finale .letter { position: relative; z-index: 1; }
+  #collage { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  #collage .mini {
+    position: absolute; width: 86px; padding: 5px 5px 15px; background: #fff;
+    box-shadow: 0 3px 8px rgba(60, 50, 38, .3); opacity: .95;
+    transform: rotate(var(--r)) scale(0); animation: pop .55s cubic-bezier(.2, 1.4, .4, 1) forwards;
+  }
+  #collage .mini img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+  @keyframes pop { to { transform: rotate(var(--r)) scale(1); } }
+
+  /* ---- confetti ---- */
+  .confetti { position: fixed; top: -20px; pointer-events: none; z-index: 50; animation: fall linear forwards; }
+  .confetti .sway { animation: sway ease-in-out infinite alternate; }
+  .confetti .spin { animation: spin linear infinite; }
+  @keyframes fall { to { transform: translateY(108vh); } }
+  @keyframes sway { from { transform: translateX(calc(-1 * var(--drift, 24px))); } to { transform: translateX(var(--drift, 24px)); } }
+  @keyframes spin { to { transform: rotate(var(--turn, 360deg)); } }
+</style>
+</head>
+<body>
+
+<section id="lock" class="screen active">
+  <div class="lock-card">
+    <div class="lock-heart">💕</div>
+    <h1>10 Years of Us</h1>
+    <p class="sub" id="hint"></p>
+    <input id="pw" type="password" inputmode="numeric" autocomplete="off" aria-label="password">
+    <div id="lockmsg"></div>
+    <button class="big" id="unlockbtn">Unlock ❤</button>
+  </div>
+</section>
+
+<section id="quiz" class="screen">
+  <div id="progress"></div>
+  <div class="polaroid" id="polaroid"><div id="photoslot"></div></div>
+  <div class="question" id="qtext"></div>
+  <div class="answers" id="answers"></div>
+  <div id="feedback"></div>
+  <button class="big" id="nextbtn">Next memory →</button>
+</section>
+
+<section id="score" class="screen">
+  <h1>The results are in…</h1>
+  <div class="scorebig" id="scoretext"></div>
+  <div class="rating" id="ratingtext"></div>
+  <button class="big" id="finalebtn">One more thing… ❤</button>
+</section>
+
+<section id="finale" class="screen">
+  <div id="collage"></div>
+  <div class="letter">
+    <span class="letter-title">Happy 10th Anniversary 💕</span>
+    <span id="finalemsg"></span>
+    <span class="sig" id="finalefrom"></span>
+  </div>
+</section>
+
+<script>
+const ITERATIONS = 600000;
+let payloadBytes = null, quiz = null, idx = 0, scoreCount = 0;
+
+const $ = (id) => document.getElementById(id);
+const show = (id) => {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo(0, 0);
+};
+
+// Prefetch the encrypted payload while she reads the lock screen.
+const payloadPromise = fetch('payload.enc')
+  .then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.arrayBuffer(); })
+  .then((b) => { payloadBytes = new Uint8Array(b); })
+  .catch(() => {});
+
+async function decrypt(password, bytes) {
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: bytes.slice(0, 16), iterations: ITERATIONS, hash: 'SHA-256' },
+    material, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(16, 28) }, key, bytes.slice(28));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+async function tryUnlock() {
+  const btn = $('unlockbtn');
+  btn.disabled = true;
+  $('lockmsg').textContent = 'unlocking…';
+  await payloadPromise;
+  if (!payloadBytes) {
+    $('lockmsg').textContent = "Couldn't load — check your connection and refresh 💔";
+    btn.disabled = false;
+    return;
+  }
+  try {
+    quiz = await decrypt($('pw').value.trim(), payloadBytes);
+    startQuiz();
+  } catch {
+    $('lockmsg').textContent = 'Nope… think anniversary 😉';
+    $('lock').classList.add('shake');
+    setTimeout(() => $('lock').classList.remove('shake'), 500);
+    $('pw').value = '';
+    btn.disabled = false;
+  }
+}
+
+function startQuiz() {
+  idx = 0; scoreCount = 0;
+  confetti(40);
+  showQuestion();
+  show('quiz');
+}
+
+function showQuestion() {
+  const q = quiz.questions[idx];
+  $('progress').textContent = `Memory ${idx + 1} of ${quiz.questions.length}`;
+  const pol = $('polaroid');
+  pol.classList.toggle('alt', idx % 2 === 1);
+  pol.classList.remove('enter');
+  void pol.offsetWidth; // restart the entrance animation
+  pol.classList.add('enter');
+  $('photoslot').innerHTML = q.photo
+    ? `<img src="${q.photo}" alt="">`
+    : `<div class="placeholder"><span>📸</span>photo memory loading…</div>`;
+  $('qtext').textContent = q.q;
+  $('feedback').innerHTML = '';
+  $('nextbtn').style.visibility = 'hidden';
+  const box = $('answers');
+  box.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.textContent = opt;
+    b.style.setProperty('--d', 150 + i * 80 + 'ms');
+    b.onclick = () => answer(i, b);
+    box.appendChild(b);
+  });
+}
+
+function answer(i, btn) {
+  const q = quiz.questions[idx];
+  const buttons = [...$('answers').children];
+  buttons.forEach((b) => (b.disabled = true));
+  const right = q.correct === null || i === q.correct;
+  if (right) {
+    scoreCount++;
+    btn.classList.add('correct');
+    confetti(q.correct === null ? 160 : 60);
+    $('feedback').innerHTML = `<span class="verdict">${pick(['Yes!!', 'Nailed it!', 'Of course you knew 💕', 'Correct!'])}</span>${q.caption}`;
+  } else {
+    btn.classList.add('wrong');
+    buttons[q.correct].classList.add('correct');
+    $('feedback').innerHTML = `<span class="verdict">${pick(['Nope! 😜', 'Not quite!', 'Gasp!! 😱'])}</span>${q.caption}`;
+  }
+  $('nextbtn').textContent = idx === quiz.questions.length - 1 ? 'See your score →' : 'Next memory →';
+  $('nextbtn').style.visibility = 'visible';
+}
+
+function next() {
+  if (++idx < quiz.questions.length) { showQuestion(); }
+  else { showScore(); }
+}
+
+function showScore() {
+  const total = quiz.questions.length;
+  const scoreEl = $('scoretext');
+  let shown = 0;
+  scoreEl.textContent = `0 / ${total}`;
+  const counter = setInterval(() => {
+    shown = Math.min(shown + 1, scoreCount);
+    scoreEl.textContent = `${shown} / ${total}`;
+    if (shown >= scoreCount) clearInterval(counter);
+  }, 90);
+  const pct = scoreCount / total;
+  $('ratingtext').textContent =
+    pct === 1 ? "Perfect score. It's like you were there for all of it 😏" :
+    pct >= .8 ? 'Okay, you definitely married the right person. 💍' :
+    pct >= .5 ? 'Solid! The next 10 years are for studying. 📚' :
+    "Good thing this quiz wasn't in the vows. 😅 I love you anyway.";
+  confetti(120);
+  show('score');
+}
+
+function buildCollage() {
+  const box = $('collage');
+  if (!quiz.collage || box.childElementCount) return;
+  // Photos from the quiz itself plus every extra memory, shuffled.
+  const srcs = [...quiz.collage, ...quiz.questions.map((q) => q.photo).filter(Boolean)]
+    .sort(() => Math.random() - .5);
+  srcs.forEach((src, i) => {
+    const d = document.createElement('div');
+    d.className = 'mini';
+    d.style.setProperty('--r', (Math.random() * 30 - 15).toFixed(1) + 'deg');
+    d.style.left = Math.random() * 78 + '%';
+    d.style.top = Math.random() * 88 + '%';
+    d.style.animationDelay = (i * .18).toFixed(2) + 's';
+    const img = document.createElement('img');
+    img.src = src;
+    d.appendChild(img);
+    box.appendChild(d);
+  });
+}
+
+function showFinale() {
+  $('finalemsg').textContent = quiz.finale.message;
+  $('finalefrom').textContent = quiz.finale.from;
+  buildCollage();
+  show('finale');
+  let n = 0;
+  const t = setInterval(() => { confetti(14, ['❤', '💕', '💗', '💞']); if (++n > 7) clearInterval(t); }, 700);
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+const PALETTES = [
+  ['#e0526d', '#f2b134', '#3f9d63', '#4a90d9', '#9b59b6'],
+  ['#ff6b81', '#ffd166', '#8ac6d1', '#c56cf0', '#f78fb3'],
+  ['#e84393', '#fd79a8', '#fab1a0', '#ffeaa7', '#55efc4'],
+  ['#c23a55', '#f2b134', '#7bed9f', '#70a1ff', '#e77f67']
+];
+const SPRINKLES = [['❤', '💕', '💗'], ['⭐', '✨', '💫'], ['🎉', '🎊'], ['🌸', '🌺', '💮']];
+
+// Every burst gets its own personality: palette, sprinkle set, sway width,
+// and per-piece shape (square/dot/streamer/emoji), spin and drift.
+function confetti(count, chars) {
+  const palette = pick(PALETTES);
+  const emojis = chars ?? (Math.random() < .3 ? pick(SPRINKLES) : null);
+  const burstDrift = 14 + Math.random() * 46;
+  for (let i = 0; i < count; i++) {
+    const fall = document.createElement('div');
+    fall.className = 'confetti';
+    const sway = document.createElement('div');
+    sway.className = 'sway';
+    const spin = document.createElement('div');
+    spin.className = 'spin';
+    if (emojis && (chars || Math.random() < .7)) {
+      spin.textContent = pick(emojis);
+      spin.style.fontSize = 12 + Math.random() * 20 + 'px';
+    } else {
+      const w = 5 + Math.random() * 9;
+      spin.style.width = w + 'px';
+      spin.style.height = (Math.random() < .25 ? w * (2 + Math.random() * 2) : w) + 'px';
+      spin.style.background = pick(palette);
+      if (Math.random() < .5) spin.style.borderRadius = '50%';
+    }
+    sway.style.setProperty('--drift', ((Math.random() < .5 ? -1 : 1) * burstDrift * (.5 + Math.random())).toFixed(0) + 'px');
+    sway.style.animationDuration = (.7 + Math.random() * 1.6).toFixed(2) + 's';
+    spin.style.setProperty('--turn', (Math.random() < .5 ? -360 : 360) + 'deg');
+    spin.style.animationDuration = (.8 + Math.random() * 2).toFixed(2) + 's';
+    fall.style.left = Math.random() * 100 + 'vw';
+    fall.style.animationDuration = (2.2 + Math.random() * 2.5).toFixed(2) + 's';
+    fall.style.animationDelay = (Math.random() * .8).toFixed(2) + 's';
+    sway.appendChild(spin);
+    fall.appendChild(sway);
+    document.body.appendChild(fall);
+    setTimeout(() => fall.remove(), 6500);
+  }
+}
+
+$('unlockbtn').onclick = tryUnlock;
+$('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+$('nextbtn').onclick = next;
+$('finalebtn').onclick = showFinale;
+
+// Hint is baked into the page (it is public anyway).
+$('hint').textContent = 'Hint: What happened 10 years ago? Month, day, year... no slashes 🗓️';
+
+// Hearts drifting up behind the lock screen; negative delays start them mid-flight.
+for (let i = 0; i < 9; i++) {
+  const h = document.createElement('div');
+  h.className = 'floatheart';
+  h.textContent = pick(['❤', '💕', '💗', '💞']);
+  h.style.left = Math.random() * 92 + '%';
+  h.style.fontSize = 14 + Math.random() * 22 + 'px';
+  h.style.animationDuration = (9 + Math.random() * 10).toFixed(1) + 's';
+  h.style.animationDelay = (-Math.random() * 12).toFixed(1) + 's';
+  $('lock').appendChild(h);
+}
+</script>
+</body>
+</html>
